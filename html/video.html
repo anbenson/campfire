@@ -28,11 +28,14 @@
           socket.emit("clientPause", ROOM, campfireVideo.currentTime);
         });
         // SOCKET.IO HANDLING
-        socket.on("videoChosen", function(url, time) {
+        socket.on("videoChosen", function(url, time, isPlaying) {
           videoUrlInstructions.innerHTML = "";
           campfireVideo.src = url;
           console.log(time);
           campfireVideo.currentTime = time;
+          if (isPlaying) {
+            campfireVideo.play();
+          }
         });
         socket.on("serverPlay", function(time) {
           campfireVideo.currentTime = time;
@@ -44,6 +47,9 @@
           campfireVideo.pause();
         });
         socket.emit("firstRun", ROOM);
+        setInterval(function() {
+          socket.emit("timestamp", ROOM, campfireVideo.currentTime);
+        }, 500);
       };
     </script>
   </head>

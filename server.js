@@ -63,7 +63,7 @@ io.on("connection", function(socket) {
       socket.join(room);
       var roomData = rooms[room];
       if (roomData.videoChosen) {
-        socket.emit("videoChosen", roomData.videoURL, roomData.videoTime);
+        socket.emit("videoChosen", roomData.videoURL, roomData.videoTime, roomData.videoIsPlaying);
       }
     }
   });
@@ -72,7 +72,7 @@ io.on("connection", function(socket) {
       rooms[room]['videoChosen'] = true;
       rooms[room]['videoURL'] = url;
       var roomData = rooms[room];
-      io.to(room).emit("videoChosen", url, roomData.videoTime);
+      io.to(room).emit("videoChosen", url, roomData.videoTime, roomData.videoIsPlaying);
     }
   });
   socket.on("clientPlay", function(room, time) {
@@ -91,6 +91,11 @@ io.on("connection", function(socket) {
         io.to(room).emit("serverPause", time);
       }
       rooms[room]['videoIsPlaying'] = false;
+    }
+  });
+  socket.on("timestamp", function(room, time) {
+    if (room in rooms) {
+      rooms[room]['videoTime'] = time;
     }
   });
 });
