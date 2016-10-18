@@ -32,7 +32,7 @@
         socket.on("joinRoomFeedback", function(name, message) {
           joinFeedback.innerHTML = message;
           if (name !== "") {
-            window.location = BASENAME + "/" + name;
+            window.location = "/" + name;
           }
         });
       };
