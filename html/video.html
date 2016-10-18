@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Campfire | Watching Video in %ROOM%</title>
+    <meta charset='utf-8'>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      // const BASENAME = "localhost:3000";
+      const BASENAME = "campfiresync.herokuapp.com";
+      const ROOM = "%ROOM%";
+      window.onload = function() {
+        var socket = io();
+        // DOCUMENT ELEMENTS
+        var videoUrlInput = document.getElementById("video-url-input");
+        var videoUrlInstructions = document.getElementById("video-url-instructions");
+        var campfireVideo = document.getElementById("campfire-video");
+        // LISTENERS
+        videoUrlInput.addEventListener("keyup", function(e) {
+          if (e.keyCode == 13) {
+            socket.emit("videoUrl", ROOM, videoUrlInput.value);
+          }
+        });
+        campfireVideo.addEventListener("playing", function(e) {
+          socket.emit("clientPlay", ROOM, campfireVideo.currentTime);
+          console.log(campfireVideo.currentTime);
+        });
+        campfireVideo.addEventListener("pause", function(e) {
+          socket.emit("clientPause", ROOM, campfireVideo.currentTime);
+        });
+        // SOCKET.IO HANDLING
+        socket.on("videoChosen", function(url, time) {
+          videoUrlInstructions.innerHTML = "";
+          campfireVideo.src = url;
+          console.log(time);
+          campfireVideo.currentTime = time;
+        });
+        socket.on("serverPlay", function(time) {
+          campfireVideo.currentTime = time;
+          console.log("received serverPlay");
+          campfireVideo.play();
+        });
+        socket.on("serverPause", function(time) {
+          campfireVideo.currentTime = time;
+          campfireVideo.pause();
+        });
+        socket.emit("firstRun", ROOM);
+      };
+    </script>
+  </head>
+  <body>
+    <h1>Watch a Video</h1>
+    <div id="video-url-instructions">
+      <p>Enter a video URL:</p>
+      <input id="video-url-input" type="text">
+    </div>
+    <br>
+    <video id="campfire-video" preload="auto" controls>Please use a
+      modern browser.</video>
+  </body>
+</html>

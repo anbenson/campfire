@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Campfire | Video Unreliably Synced</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const BASENAME = "localhost:3000";
+      // const BASENAME = "campfiresync.herokuapp.com";
+      window.onload = function() {
+        var socket = io();
+        // DOCUMENT ELEMENTS
+        var createInput = document.getElementById("create-input");
+        var joinInput = document.getElementById("join-input");
+        var createFeedback = document.getElementById("create-feedback");
+        var joinFeedback = document.getElementById("join-feedback");
+        // LISTENERS
+        createInput.addEventListener("keyup", function(e) {
+          if (e.keyCode == 13) {
+            socket.emit("createRoom", createInput.value);
+          }
+        });
+        joinInput.addEventListener("keyup", function(e) {
+          if (e.keyCode == 13) {
+            socket.emit("joinRoom", joinInput.value);
+          }
+        });
+        // SOCKET.IO HANDLING
+        socket.on("createRoomFeedback", function(message) {
+          createFeedback.innerHTML = message;
+        });
+        socket.on("joinRoomFeedback", function(name, message) {
+          joinFeedback.innerHTML = message;
+          if (name !== "") {
+            window.location = BASENAME + "/" + name;
+          }
+        });
+      };
+    </script>
+  </head>
+  <body>
+    <h1>Campfire</h1>
+    <p>Create a new room:</p>
+    <input id="create-input" type="text">
+    <p id="create-feedback"></p>
+    <p>Or join an existing room:</p>
+    <input id="join-input" type="text">
+    <p id="join-feedback"></p>
+  </body>
+</html>
