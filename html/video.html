@@ -13,6 +13,8 @@
       var ytID = "";
       var ytplayer;
       var loadYoutubePlayer;
+      var startTime = 0;
+      var wasPlaying = false;
 
       // LOAD YOUTUBE API
       var tag = document.createElement('script');
@@ -28,15 +30,33 @@
       }
 
       window.onload = function() {
+        // YOUTUBE THINGS
         loadYoutubePlayer = function() {
           // destroy current video and let Youtube API make their own thing
           campfireVideo.parentNode.removeChild(campfireVideo);
           ytplayer = new YT.Player("yt-player", {
             videoId: ytID,
             events: {
+              'onStateChange': onPlayerStateChange,
+              'onReady': onPlayerReady
             }
           });
         }
+        var onPlayerStateChange = function(event) {
+          if (event.data == YT.PlayerState.PLAYING) {
+            sendPlayToServer(ytplayer.getCurrentTime());
+          }
+          if (event.data == YT.PlayerState.PAUSED) {
+            sendPauseToServer(ytplayer.getCurrentTime());
+          }
+        };
+
+        var onPlayerReady = function(event) {
+          if (wasPlaying) {
+            ytplayer.seekTo(startTime);
+            ytplayer.playVideo();
+          }
+        };
 
         // CONNECT TO SOCKET
         var socket = io();
@@ -44,6 +64,16 @@
         var videoUrlInput = document.getElementById("video-url-input");
         var videoUrlInstructions = document.getElementById("video-url-instructions");
         var campfireVideo = document.getElementById("campfire-video");
+        // CLIENT API
+        var sendPlayToServer = function(currentTime) {
+          socket.emit("clientPlay", ROOM, currentTime);
+        };
+        var sendPauseToServer = function(currentTime) {
+          socket.emit("clientPause", ROOM, currentTime);
+        };
+        var sendTimestampToServer = function(currentTime) {
+          socket.emit("timestamp", ROOM, currentTime);
+        };
         // LISTENERS
         videoUrlInput.addEventListener("keyup", function(e) {
           if (e.keyCode == 13) {
@@ -51,11 +81,10 @@
           }
         });
         campfireVideo.addEventListener("playing", function(e) {
-          socket.emit("clientPlay", ROOM, campfireVideo.currentTime);
-          console.log(campfireVideo.currentTime);
+          sendPlayToServer(campfireVideo.currentTime);
         });
         campfireVideo.addEventListener("pause", function(e) {
-          socket.emit("clientPause", ROOM, campfireVideo.currentTime);
+          sendPauseToServer(campfireVideo.currentTime);
         });
         // SOCKET.IO HANDLING
         socket.on("videoChosen", function(url, time, isPlaying, youtubeID) {
@@ -72,23 +101,40 @@
             // is a hack
             videoIsYoutube = true;
             ytID = youtubeID;
+            startTime = time;
+            wasPlaying = isPlaying;
             if (ytAPILoaded) {
               loadYoutubePlayer();
             }
           }
         });
         socket.on("serverPlay", function(time) {
-          campfireVideo.currentTime = time;
-          console.log("received serverPlay");
-          campfireVideo.play();
+          if (videoIsYoutube) {
+            ytplayer.seekTo(time, true);
+            ytplayer.playVideo();
+          } else {
+            campfireVideo.currentTime = time;
+            campfireVideo.play();
+          }
         });
         socket.on("serverPause", function(time) {
-          campfireVideo.currentTime = time;
-          campfireVideo.pause();
+          if (videoIsYoutube) {
+            ytplayer.seekTo(time, true);
+            ytplayer.pauseVideo();
+          } else {
+            campfireVideo.currentTime = time;
+            campfireVideo.pause();
+          }
         });
         socket.emit("firstRun", ROOM);
         setInterval(function() {
-          socket.emit("timestamp", ROOM, campfireVideo.currentTime);
+          if (videoIsYoutube) {
+            if (ytplayer.getCurrentTime) {
+              sendTimestampToServer(ytplayer.getCurrentTime());
+            }
+          } else {
+            sendTimestampToServer(campfireVideo.currentTime);
+          }
         }, 500);
       };
     </script>
