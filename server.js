@@ -85,7 +85,7 @@ io.on("connection", function(socket) {
     if (room in rooms) {
       rooms[room]['videoTime'] = time;
       if (!rooms[room]['videoIsPlaying']) {
-        io.to(room).emit("serverPlay", time);
+        socket.to(room).emit("serverPlay", time);
       }
       rooms[room]['videoIsPlaying'] = true;
     }
@@ -94,7 +94,7 @@ io.on("connection", function(socket) {
     if (room in rooms) {
       rooms[room]['videoTime'] = time;
       if (rooms[room]['videoIsPlaying']) {
-        io.to(room).emit("serverPause", time);
+        socket.to(room).emit("serverPause", time);
       }
       rooms[room]['videoIsPlaying'] = false;
     }
