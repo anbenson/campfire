@@ -41,6 +41,10 @@
         font-family: Arial, sans-serif;
         overflow-wrap: break-word;
       }
+
+      #messages {
+        overflow: scroll;
+      }
     </style>
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -201,6 +205,7 @@
             messageElement.appendChild(pElement);
             messageDiv.appendChild(messageElement);
           }
+          messageDiv.scrollTop = messageDiv.scrollHeight;
         });
         socket.emit("getAllMessages", ROOM);
       };
