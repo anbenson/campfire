@@ -37,7 +37,8 @@ var newRoomData = function() {
     'videoURL': "",
     'videoTime': 0,
     'videoIsPlaying': false,
-    'YoutubeID': ""
+    'YoutubeID': "",
+    'messages': []
   };
 };
 
@@ -102,6 +103,20 @@ io.on("connection", function(socket) {
   socket.on("timestamp", function(room, time) {
     if (room in rooms) {
       rooms[room]['videoTime'] = time;
+    }
+  });
+  socket.on("composeMessage", function(room, message) {
+    if (room in rooms) {
+      if (rooms[room]['messages'].length > 10) {
+        rooms[room]['messages'].shift();
+      }
+      rooms[room]['messages'].push(message);
+      io.to(room).emit("allMessages", rooms[room]['messages']);
+    }
+  });
+  socket.on("getAllMessages", function(room) {
+    if (room in rooms) {
+      socket.emit("allMessages", rooms[room]['messages']);
     }
   });
 });

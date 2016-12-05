@@ -21,18 +21,24 @@
         }
       }
 
-      @media only screen and (min-width: 769px) and (max-width: 960px) {
+      @media only screen and (min-width: 860px) and (max-width: 960px) {
         .yVid {
           width: 640px;
           height: 360px;
         }
       }
 
-      @media only screen and (max-width: 768px) {
+      @media only screen and (max-width: 860px) {
         .yVid {
           width: 560px;
           height: 315px;
         }
+      }
+
+      .pMessage {
+        margin: 0px;
+        padding: 10px;
+        font-family: Arial, sans-serif;
       }
     </style>
     <script src="/socket.io/socket.io.js"></script>
@@ -99,6 +105,8 @@
         var videoUrlInput = document.getElementById("video-url-input");
         var videoUrlInstructions = document.getElementById("video-url-instructions");
         var campfireVideo = document.getElementById("campfire-video");
+        var messageDiv = document.getElementById("messages");
+        var composeInput = document.getElementById("compose-input");
         // CLIENT API
         var sendPlayToServer = function(currentTime) {
           socket.emit("clientPlay", ROOM, currentTime);
@@ -120,6 +128,12 @@
         });
         campfireVideo.addEventListener("pause", function(e) {
           sendPauseToServer(campfireVideo.currentTime);
+        });
+        composeInput.addEventListener("keyup", function(e) {
+          if (e.keyCode == 13) {
+            socket.emit("composeMessage", ROOM, composeInput.value);
+            composeInput.value = "";
+          }
         });
         // SOCKET.IO HANDLING
         socket.on("videoChosen", function(url, time, isPlaying, youtubeID) {
@@ -171,6 +185,23 @@
             sendTimestampToServer(campfireVideo.currentTime);
           }
         }, 500);
+        // MESSAGES HANDLING
+        socket.on("allMessages", function(messages) {
+          // destroy all existing messages
+          while (messageDiv.firstChild) {
+            messageDiv.removeChild(messageDiv.firstChild);
+          }
+          // put in all the new ones
+          for (var message in messages) {
+            var messageElement = document.createElement("div");
+            var pElement = document.createElement("p");
+            pElement.className += " pMessage";
+            pElement.innerHTML = "Anonymous: " + messages[message];
+            messageElement.appendChild(pElement);
+            messageDiv.appendChild(messageElement);
+          }
+        });
+        socket.emit("getAllMessages", ROOM);
       };
     </script>
   </head>
@@ -181,11 +212,26 @@
       <input id="video-url-input" type="text">
     </div>
     <br>
-    <div class="yVid">
-      <iframe id="yt-player" type="text/html" width="100%" height="100%"
-         allowfullscreen="" frameborder="0" style="display:none"></iframe>
-      <video id="campfire-video" width="100%" height="100%" preload="auto" controls>Please use a
-        modern browser.</video>
+    <div style="display:flex; justify-content: space-around">
+      <div class="yVid">
+        <iframe id="yt-player" type="text/html" width="100%" height="100%"
+           allowfullscreen="" frameborder="0" style="display:none"></iframe>
+        <video id="campfire-video" width="100%" height="100%" preload="auto" controls>Please use a
+          modern browser.</video>
+      </div>
+      <div class="messageBoard" style="border: 1px solid black; width:100%;
+        height:500px; margin: 0 50px; max-width: 400px">
+        <div class="title" style="border-bottom: 1px solid black; height: 40px">
+          <p style="margin: 15px; font-family: Arial">
+            Chat about the video
+          </p>
+        </div>
+        <div id="messages" style="height:405px">
+        </div>
+        <div class="messageCompose">
+          <input id="compose-input" type="text" style="width:95%; margin: 0; height: 30px">
+        </div>
+      </div>
     </div>
   </body>
 </html>
