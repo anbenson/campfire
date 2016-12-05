@@ -12,7 +12,16 @@ var fs = require("fs");
 app.get("/js", express.static(__dirname+"/js"));
 
 app.get("/", function(req, res) {
-  res.sendFile(__dirname + "/html/index.html");
+  fs.readFile(__dirname + "/html/index.html", 'utf8', function(err, data) {
+    var replaceText = "";
+    for (var room in rooms) {
+      replaceText += "<option value=\"" + room + "\">" + room + "</option>";
+      console.log(replaceText);
+    }
+    data = data.replace("%OPTIONS%", replaceText);
+    res.writeHead(200);
+    res.end(data);
+  });
 });
 
 app.get("/:room", function(req, res) {
@@ -48,10 +57,10 @@ var newRoomData = function() {
 io.on("connection", function(socket) {
   socket.on("createRoom", function(name) {
     if (name in rooms) {
-      socket.emit("createRoomFeedback", "Room name already exists!");
+      socket.emit("createRoomFeedback", "Room name already exists!", null);
     } else {
       rooms[name] = newRoomData();
-      socket.emit("createRoomFeedback", "Room " + name + " successfully created.");
+      socket.emit("createRoomFeedback", "Room " + name + " successfully created.", name);
     }
   });
   socket.on("joinRoom", function(name) {

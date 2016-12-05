@@ -14,20 +14,28 @@
         var joinInput = document.getElementById("join-input");
         var createFeedback = document.getElementById("create-feedback");
         var joinFeedback = document.getElementById("join-feedback");
+        var selectElement = document.getElementById("room-select");
         // LISTENERS
         createInput.addEventListener("keyup", function(e) {
           if (e.keyCode == 13) {
             socket.emit("createRoom", createInput.value);
           }
         });
-        joinInput.addEventListener("keyup", function(e) {
-          if (e.keyCode == 13) {
-            socket.emit("joinRoom", joinInput.value);
-          }
+        joinInput.addEventListener("click", function(e) {
+          e.preventDefault();
+          socket.emit("joinRoom", selectElement.value);
         });
         // SOCKET.IO HANDLING
-        socket.on("createRoomFeedback", function(message) {
+        socket.on("createRoomFeedback", function(message, room) {
           createFeedback.innerHTML = message;
+          console.log(room);
+          if (room) {
+            console.log('making option');
+            var optionElement = document.createElement("option");
+            optionElement.value = room;
+            optionElement.innerHTML = room;
+            selectElement.appendChild(optionElement);
+          }
         });
         socket.on("joinRoomFeedback", function(name, message) {
           joinFeedback.innerHTML = message;
@@ -44,7 +52,12 @@
     <input id="create-input" type="text">
     <p id="create-feedback"></p>
     <p>Or join an existing room:</p>
-    <input id="join-input" type="text">
+    <form>
+      <select id="room-select" name="room">
+        %OPTIONS%
+      </select>
+      <input id="join-input" value="Join!" type="submit">
+    </form>
     <p id="join-feedback"></p>
   </body>
 </html>
