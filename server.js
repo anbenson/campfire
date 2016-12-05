@@ -30,14 +30,14 @@ app.get("/:room", function(req, res) {
 
 // MODEL
 var rooms = {};
-var sockets = [];
 
 var newRoomData = function() {
   return {
     'videoChosen': false,
     'videoURL': "",
     'videoTime': 0,
-    'videoIsPlaying': false
+    'videoIsPlaying': false,
+    'YoutubeID': ""
   };
 };
 
@@ -63,16 +63,22 @@ io.on("connection", function(socket) {
       socket.join(room);
       var roomData = rooms[room];
       if (roomData.videoChosen) {
-        socket.emit("videoChosen", roomData.videoURL, roomData.videoTime, roomData.videoIsPlaying);
+        socket.emit("videoChosen", roomData.videoURL, roomData.videoTime, roomData.videoIsPlaying, roomData.YoutubeID);
       }
     }
   });
   socket.on("videoUrl", function(room, url) {
     if (room in rooms) {
       rooms[room]['videoChosen'] = true;
-      rooms[room]['videoURL'] = url;
+      // determine if url is a Youtube url or not
+      // do this via hacky string parsing
+      if (url.indexOf("youtube.com") != -1) {
+        rooms[room]['YoutubeID'] = url.substring(url.indexOf("=")+1);
+      } else {
+        rooms[room]['videoURL'] = url;
+      }
       var roomData = rooms[room];
-      io.to(room).emit("videoChosen", url, roomData.videoTime, roomData.videoIsPlaying);
+      io.to(room).emit("videoChosen", roomData.videoURL, roomData.videoTime, roomData.videoIsPlaying, roomData.YoutubeID);
     }
   });
   socket.on("clientPlay", function(room, time) {

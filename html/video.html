@@ -8,7 +8,37 @@
       // const BASENAME = "localhost:3000";
       const BASENAME = "campfiresync.herokuapp.com";
       const ROOM = "%ROOM%";
+      var videoIsYoutube = false;
+      var ytAPILoaded = false;
+      var ytID = "";
+      var ytplayer;
+      var loadYoutubePlayer;
+
+      // LOAD YOUTUBE API
+      var tag = document.createElement('script');
+      tag.src = "https://www.youtube.com/iframe_api";
+      var firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+      function onYouTubeIframeAPIReady() {
+        ytAPILoaded = true;
+        if (ytID) {
+          loadYoutubePlayer();
+        }
+      }
+
       window.onload = function() {
+        loadYoutubePlayer = function() {
+          // destroy current video and let Youtube API make their own thing
+          campfireVideo.parentNode.removeChild(campfireVideo);
+          ytplayer = new YT.Player("yt-player", {
+            videoId: ytID,
+            events: {
+            }
+          });
+        }
+
+        // CONNECT TO SOCKET
         var socket = io();
         // DOCUMENT ELEMENTS
         var videoUrlInput = document.getElementById("video-url-input");
@@ -28,13 +58,23 @@
           socket.emit("clientPause", ROOM, campfireVideo.currentTime);
         });
         // SOCKET.IO HANDLING
-        socket.on("videoChosen", function(url, time, isPlaying) {
+        socket.on("videoChosen", function(url, time, isPlaying, youtubeID) {
           videoUrlInstructions.innerHTML = "";
-          campfireVideo.src = url;
-          console.log(time);
-          campfireVideo.currentTime = time;
-          if (isPlaying) {
-            campfireVideo.play();
+          // check whether this is a Youtube link or not
+          if (url) {
+            campfireVideo.src = url;
+            campfireVideo.currentTime = time;
+            if (isPlaying) {
+              campfireVideo.play();
+            }
+          } else {
+            // mark the client as ready. yes there's a race condition, yes this
+            // is a hack
+            videoIsYoutube = true;
+            ytID = youtubeID;
+            if (ytAPILoaded) {
+              loadYoutubePlayer();
+            }
           }
         });
         socket.on("serverPlay", function(time) {
@@ -60,6 +100,7 @@
       <input id="video-url-input" type="text">
     </div>
     <br>
+    <div id="yt-player"></div>
     <video id="campfire-video" preload="auto" controls>Please use a
       modern browser.</video>
   </body>
